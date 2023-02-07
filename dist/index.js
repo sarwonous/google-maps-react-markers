@@ -310,6 +310,7 @@ var MapComponent = function MapComponent(_ref) {
     defaultZoom = _ref.defaultZoom,
     onGoogleApiLoaded = _ref.onGoogleApiLoaded,
     onChange = _ref.onChange,
+    onDrag = _ref.onDrag,
     options = _ref.options;
   var mapRef = React.useRef(null);
   var prevBoundsRef = React.useRef(null);
@@ -340,6 +341,19 @@ var MapComponent = function MapComponent(_ref) {
       prevBoundsRef.current = boundsArray;
     }
   }, [map, onChange]);
+  var onDragEvent = React.useCallback(function () {
+    var zoom = map.getZoom();
+    var bounds = map.getBounds();
+    var centerLatLng = map.getCenter();
+    console.log('dragged', zoom);
+    if (onDrag) {
+      onDrag({
+        zoom: zoom,
+        center: [centerLatLng.lng(), centerLatLng.lat()],
+        bounds: bounds
+      });
+    }
+  }, [map, onDrag]);
   React.useEffect(function () {
     if (mapRef.current && !map) {
       setMap(new window.google.maps.Map(mapRef.current, _extends({
@@ -361,12 +375,15 @@ var MapComponent = function MapComponent(_ref) {
       }
       window.google.maps.event.clearListeners(map, 'idle');
       window.google.maps.event.addListener(map, 'idle', onIdle);
+      window.google.maps.event.clearListeners(map, 'drag');
+      window.google.maps.event.addListener(map, 'drag', onDragEvent);
     }
-  }, [googleApiCalled, map, maps, onChange, onGoogleApiLoaded, onIdle]);
+  }, [googleApiCalled, map, maps, onChange, onGoogleApiLoaded, onIdle, onDragEvent]);
   React.useEffect(function () {
     return function () {
       if (map) {
         window.google.maps.event.clearListeners(map, 'idle');
+        window.google.maps.event.clearListeners(map, 'drag');
       }
     };
   }, [map]);
@@ -391,6 +408,7 @@ MapComponent.defaultProps = {
   },
   onGoogleApiLoaded: function onGoogleApiLoaded() {},
   onChange: function onChange() {},
+  onDrag: function onDrag() {},
   options: {}
 };
 MapComponent.propTypes = {
@@ -400,7 +418,8 @@ MapComponent.propTypes = {
   defaultZoom: propTypes.number.isRequired,
   onGoogleApiLoaded: propTypes.func,
   onChange: propTypes.func,
-  options: propTypes.object
+  options: propTypes.object,
+  onDrag: propTypes.func
 };
 
 var _excluded = ["apiKey", "libraries", "children", "loadingContent", "idleContent", "errorContent", "mapMinHeight", "containerProps", "loadScriptExternally", "status"];

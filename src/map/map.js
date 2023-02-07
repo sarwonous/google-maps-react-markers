@@ -5,7 +5,7 @@ import MapMarkers from './markers'
 
 const EPS = 0.00001
 
-const MapComponent = ({ children, style, defaultCenter, defaultZoom, onGoogleApiLoaded, onChange, options }) => {
+const MapComponent = ({ children, style, defaultCenter, defaultZoom, onGoogleApiLoaded, onChange, onDrag, options }) => {
 	const mapRef = useRef(null)
 	const prevBoundsRef = useRef(null)
 	const [map, setMap] = useState(null)
@@ -33,6 +33,20 @@ const MapComponent = ({ children, style, defaultCenter, defaultZoom, onGoogleApi
 		}
 	}, [map, onChange])
 
+	const onDragEvent = useCallback(() => {
+		const zoom = map.getZoom()
+		const bounds = map.getBounds()
+		const centerLatLng = map.getCenter()
+		console.log('dragged', zoom)
+		if (onDrag) {
+			onDrag({
+				zoom,
+				center: [centerLatLng.lng(), centerLatLng.lat()],
+				bounds,
+			});
+		}
+	}, [map, onDrag]);
+
 	useEffect(() => {
 		if (mapRef.current && !map) {
 			setMap(
@@ -56,14 +70,19 @@ const MapComponent = ({ children, style, defaultCenter, defaultZoom, onGoogleApi
 			window.google.maps.event.clearListeners(map, 'idle')
 			// Idle event is fired when the map becomes idle after panning or zooming.
 			window.google.maps.event.addListener(map, 'idle', onIdle)
+
+			window.google.maps.event.clearListeners(map, 'drag')
+
+			window.google.maps.event.addListener(map, 'drag', onDragEvent)
 		}
-	}, [googleApiCalled, map, maps, onChange, onGoogleApiLoaded, onIdle])
+	}, [googleApiCalled, map, maps, onChange, onGoogleApiLoaded, onIdle, onDragEvent])
 
 	useEffect(() => {
 		// clear listeners on unmount
 		return () => {
 			if (map) {
 				window.google.maps.event.clearListeners(map, 'idle')
+				window.google.maps.event.clearListeners(map, 'drag')
 			}
 		}
 	}, [map])
@@ -91,7 +110,8 @@ MapComponent.defaultProps = {
 		position: 'absolute',
 	},
 	onGoogleApiLoaded: () => {},
-	onChange: () => {},
+	onChange: () => { },
+	onDrag: () => { },
 	options: {},
 }
 
@@ -106,6 +126,7 @@ MapComponent.propTypes = {
 	onGoogleApiLoaded: func,
 	onChange: func,
 	options: object,
+	onDrag: func
 }
 
 export default MapComponent

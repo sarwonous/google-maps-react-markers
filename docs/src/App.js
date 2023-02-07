@@ -99,6 +99,7 @@ const App = () => {
 					mapMinHeight="600px"
 					onGoogleApiLoaded={onGoogleApiLoaded}
 					onChange={onMapChange}
+					onDrag={(map) => console.log('Map dragged', map)}
 				>
 					{currCoordinates.map(({ lat, lng, name }, index) => (
 						<Marker key={index} lat={lat} lng={lng} markerId={name} onClick={onMarkerClick} className="marker" />
