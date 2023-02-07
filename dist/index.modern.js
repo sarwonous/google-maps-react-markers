@@ -339,16 +339,17 @@ var MapComponent = function MapComponent(_ref) {
     }
   }, [map, onChange]);
   var onDragEvent = useCallback(function () {
-    var zoom = map.getZoom();
-    var bounds = map.getBounds();
-    var centerLatLng = map.getCenter();
-    console.log('dragged', zoom);
-    if (onDrag) {
-      onDrag({
-        zoom: zoom,
-        center: [centerLatLng.lng(), centerLatLng.lat()],
-        bounds: bounds
-      });
+    if (map.getZoom) {
+      var zoom = map.getZoom();
+      var bounds = map.getBounds();
+      var centerLatLng = map.getCenter();
+      if (onDrag) {
+        onDrag({
+          zoom: zoom,
+          center: [centerLatLng.lng(), centerLatLng.lat()],
+          bounds: bounds
+        });
+      }
     }
   }, [map, onDrag]);
   useEffect(function () {

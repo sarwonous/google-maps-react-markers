@@ -34,18 +34,19 @@ const MapComponent = ({ children, style, defaultCenter, defaultZoom, onGoogleApi
 	}, [map, onChange])
 
 	const onDragEvent = useCallback(() => {
-		const zoom = map.getZoom()
-		const bounds = map.getBounds()
-		const centerLatLng = map.getCenter()
-		console.log('dragged', zoom)
-		if (onDrag) {
-			onDrag({
-				zoom,
-				center: [centerLatLng.lng(), centerLatLng.lat()],
-				bounds,
-			});
+		if (map.getZoom) {
+			const zoom = map.getZoom()
+			const bounds = map.getBounds()
+			const centerLatLng = map.getCenter()
+			if (onDrag) {
+				onDrag({
+					zoom,
+					center: [centerLatLng.lng(), centerLatLng.lat()],
+					bounds,
+				})
+			}
 		}
-	}, [map, onDrag]);
+	}, [map, onDrag])
 
 	useEffect(() => {
 		if (mapRef.current && !map) {
