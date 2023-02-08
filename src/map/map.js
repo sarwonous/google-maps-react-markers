@@ -5,7 +5,7 @@ import MapMarkers from './markers'
 
 const EPS = 0.00001
 
-const MapComponent = ({ children, style, defaultCenter, defaultZoom, onGoogleApiLoaded, onChange, onDrag, options }) => {
+const MapComponent = ({ children, style, defaultCenter, defaultZoom, onGoogleApiLoaded, onChange, onDrag, onDragEnd, options }) => {
 	const mapRef = useRef(null)
 	const prevBoundsRef = useRef(null)
 	const [map, setMap] = useState(null)
@@ -48,6 +48,21 @@ const MapComponent = ({ children, style, defaultCenter, defaultZoom, onGoogleApi
 		}
 	}, [map, onDrag])
 
+	const onDragEndEvent = useCallback(() => {
+		if (map.getZoom) {
+			const zoom = map.getZoom()
+			const bounds = map.getBounds()
+			const centerLatLng = map.getCenter()
+			if (onDragEnd) {
+				onDragEnd({
+					zoom,
+					center: [centerLatLng.lng(), centerLatLng.lat()],
+					bounds,
+				})
+			}
+		}
+	}, [map, onDragEnd])
+
 	useEffect(() => {
 		if (mapRef.current && !map) {
 			setMap(
@@ -75,8 +90,12 @@ const MapComponent = ({ children, style, defaultCenter, defaultZoom, onGoogleApi
 			window.google.maps.event.clearListeners(map, 'drag')
 
 			window.google.maps.event.addListener(map, 'drag', onDragEvent)
+
+			window.google.maps.event.clearListeners(map, 'dragend')
+
+			window.google.maps.event.addListener(map, 'dragend', onDragEndEvent)
 		}
-	}, [googleApiCalled, map, maps, onChange, onGoogleApiLoaded, onIdle, onDragEvent])
+	}, [googleApiCalled, map, maps, onChange, onGoogleApiLoaded, onIdle, onDragEvent, onDragEndEvent])
 
 	useEffect(() => {
 		// clear listeners on unmount
@@ -84,6 +103,7 @@ const MapComponent = ({ children, style, defaultCenter, defaultZoom, onGoogleApi
 			if (map) {
 				window.google.maps.event.clearListeners(map, 'idle')
 				window.google.maps.event.clearListeners(map, 'drag')
+				window.google.maps.event.clearListeners(map, 'dragend')
 			}
 		}
 	}, [map])
@@ -111,8 +131,9 @@ MapComponent.defaultProps = {
 		position: 'absolute',
 	},
 	onGoogleApiLoaded: () => {},
-	onChange: () => { },
-	onDrag: () => { },
+	onChange: () => {},
+	onDrag: () => {},
+	onDragEnd: () => {},
 	options: {},
 }
 
@@ -127,7 +148,8 @@ MapComponent.propTypes = {
 	onGoogleApiLoaded: func,
 	onChange: func,
 	options: object,
-	onDrag: func
+	onDrag: func,
+	onDragEnd: func,
 }
 
 export default MapComponent
