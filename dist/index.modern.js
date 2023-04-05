@@ -129,14 +129,16 @@ var useGoogleMaps = function useGoogleMaps(_ref) {
     _ref$loadScriptExtern = _ref.loadScriptExternally,
     loadScriptExternally = _ref$loadScriptExtern === void 0 ? false : _ref$loadScriptExtern,
     _ref$status = _ref.status,
-    status = _ref$status === void 0 ? 'idle' : _ref$status;
+    status = _ref$status === void 0 ? 'idle' : _ref$status,
+    callback = _ref.callback;
+  if (typeof window !== "undefined") window.googleMapsCallback = callback;
   var script = apiKey ? {
-    src: "https://maps.googleapis.com/maps/api/js?key=" + apiKey + "&libraries=" + (libraries === null || libraries === void 0 ? void 0 : libraries.join(',')),
+    src: "https://maps.googleapis.com/maps/api/js?key=" + apiKey + "&callback=googleMapsCallback&libraries=" + (libraries === null || libraries === void 0 ? void 0 : libraries.join(',')),
     attributes: {
       id: 'googleMapsApi'
     }
   } : {
-    src: "https://maps.googleapis.com/maps/api/js?libraries=" + (libraries === null || libraries === void 0 ? void 0 : libraries.join(',')),
+    src: "https://maps.googleapis.com/maps/api/js?callback=googleMapsCallback&libraries=" + (libraries === null || libraries === void 0 ? void 0 : libraries.join(',')),
     attributes: {
       id: 'googleMapsApi'
     }
@@ -308,6 +310,7 @@ var MapComponent = function MapComponent(_ref) {
     onGoogleApiLoaded = _ref.onGoogleApiLoaded,
     onChange = _ref.onChange,
     onDrag = _ref.onDrag,
+    onDragEnd = _ref.onDragEnd,
     options = _ref.options;
   var mapRef = useRef(null);
   var prevBoundsRef = useRef(null);
@@ -352,6 +355,20 @@ var MapComponent = function MapComponent(_ref) {
       }
     }
   }, [map, onDrag]);
+  var onDragEndEvent = useCallback(function () {
+    if (map.getZoom) {
+      var zoom = map.getZoom();
+      var bounds = map.getBounds();
+      var centerLatLng = map.getCenter();
+      if (onDragEnd) {
+        onDragEnd({
+          zoom: zoom,
+          center: [centerLatLng.lng(), centerLatLng.lat()],
+          bounds: bounds
+        });
+      }
+    }
+  }, [map, onDragEnd]);
   useEffect(function () {
     if (mapRef.current && !map) {
       setMap(new window.google.maps.Map(mapRef.current, _extends({
@@ -375,13 +392,16 @@ var MapComponent = function MapComponent(_ref) {
       window.google.maps.event.addListener(map, 'idle', onIdle);
       window.google.maps.event.clearListeners(map, 'drag');
       window.google.maps.event.addListener(map, 'drag', onDragEvent);
+      window.google.maps.event.clearListeners(map, 'dragend');
+      window.google.maps.event.addListener(map, 'dragend', onDragEndEvent);
     }
-  }, [googleApiCalled, map, maps, onChange, onGoogleApiLoaded, onIdle, onDragEvent]);
+  }, [googleApiCalled, map, maps, onChange, onGoogleApiLoaded, onIdle, onDragEvent, onDragEndEvent]);
   useEffect(function () {
     return function () {
       if (map) {
         window.google.maps.event.clearListeners(map, 'idle');
         window.google.maps.event.clearListeners(map, 'drag');
+        window.google.maps.event.clearListeners(map, 'dragend');
       }
     };
   }, [map]);
@@ -407,6 +427,7 @@ MapComponent.defaultProps = {
   onGoogleApiLoaded: function onGoogleApiLoaded() {},
   onChange: function onChange() {},
   onDrag: function onDrag() {},
+  onDragEnd: function onDragEnd() {},
   options: {}
 };
 MapComponent.propTypes = {
@@ -417,10 +438,11 @@ MapComponent.propTypes = {
   onGoogleApiLoaded: func,
   onChange: func,
   options: object,
-  onDrag: func
+  onDrag: func,
+  onDragEnd: func
 };
 
-var _excluded = ["apiKey", "libraries", "children", "loadingContent", "idleContent", "errorContent", "mapMinHeight", "containerProps", "loadScriptExternally", "status"];
+var _excluded = ["apiKey", "libraries", "children", "loadingContent", "idleContent", "errorContent", "mapMinHeight", "containerProps", "loadScriptExternally", "status", "scriptCallback"];
 var GoogleMap = /*#__PURE__*/forwardRef(function GoogleMap(_ref, ref) {
   var apiKey = _ref.apiKey,
     libraries = _ref.libraries,
@@ -432,6 +454,7 @@ var GoogleMap = /*#__PURE__*/forwardRef(function GoogleMap(_ref, ref) {
     containerProps = _ref.containerProps,
     loadScriptExternally = _ref.loadScriptExternally,
     status = _ref.status,
+    scriptCallback = _ref.scriptCallback,
     props = _objectWithoutPropertiesLoose(_ref, _excluded);
   var renderers = {
     ready: /*#__PURE__*/React.createElement(MapComponent, props, children),
@@ -443,7 +466,8 @@ var GoogleMap = /*#__PURE__*/forwardRef(function GoogleMap(_ref, ref) {
     apiKey: apiKey,
     libraries: libraries,
     loadScriptExternally: loadScriptExternally,
-    status: status
+    status: status,
+    callback: scriptCallback
   });
   return /*#__PURE__*/React.createElement("div", _extends({
     style: {
@@ -464,7 +488,8 @@ GoogleMap.defaultProps = _extends({}, MapComponent.defaultProps, {
   apiKey: '',
   libraries: ['places', 'geometry'],
   loadScriptExternally: false,
-  status: 'idle'
+  status: 'idle',
+  scriptCallback: function scriptCallback() {}
 });
 GoogleMap.propTypes = _extends({}, MapComponent.propTypes, {
   children: oneOfType([node, arrayOf(node)]),
@@ -474,7 +499,8 @@ GoogleMap.propTypes = _extends({}, MapComponent.propTypes, {
   mapMinHeight: oneOfType([number, string]),
   containerProps: object,
   loadScriptExternally: bool,
-  status: oneOf(['idle', 'loading', 'ready', 'error'])
+  status: oneOf(['idle', 'loading', 'ready', 'error']),
+  scriptCallback: func
 });
 
 export default GoogleMap;
